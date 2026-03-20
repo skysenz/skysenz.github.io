@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>JSENS Chat Web - Blue Pro Edition</title>
+    <style>
+        :root {
+            --primary: #007bff;
+            --dark-bg: #0b0e11; 
+            --light-bg: #f8f9fa;
+            --white: #ffffff;
+            --transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* THEME LOGIC */
+        body.dark-mode { --bg: var(--dark-bg); --card: #15191c; --text: #e9edef; --sidebar: #0f1216; --chat-bg: #0b0e11; --border: rgba(255,255,255,0.08); --bubble-sent: #004a87; --bubble-rcv: #1e2428; }
+        body.light-mode { --bg: #f0f2f5; --card: var(--white); --text: #111b21; --sidebar: var(--white); --chat-bg: #e5e7eb; --border: #e9edef; --bubble-sent: #cfe2ff; --bubble-rcv: var(--white); }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Inter', 'Segoe UI', sans-serif; transition: background var(--transition), color var(--transition); }
+        body { background: var(--bg); height: 100vh; display: flex; justify-content: center; align-items: center; overflow: hidden; color: var(--text); }
+
+        /* AUTH */
+        .auth-container { background: var(--card); padding: 40px; border-radius: 16px; width: 400px; text-align: center; box-shadow: 0 20px 50px rgba(0,0,0,0.3); border: 1px solid var(--border); }
+        input { width: 100%; padding: 12px 16px; margin: 10px 0; border: 1px solid var(--border); border-radius: 10px; outline: none; background: rgba(0,0,0,0.2); color: var(--text); font-size: 14px; }
+        .btn-blue { width: 100%; padding: 12px; border: none; border-radius: 10px; background: var(--primary); color: white; font-weight: 600; cursor: pointer; margin-top: 10px; transition: 0.2s; }
+        .btn-blue:hover { opacity: 0.9; transform: translateY(-1px); }
+
+        /* APP MAIN */
+        #mainApp { width: 100vw; height: 100vh; background: var(--card); overflow: hidden; display: none; position: relative; }
+        
+        /* SIDEBAR */
+        .sidebar { width: 380px; border-right: 1px solid var(--border); display: flex; flex-direction: column; background: var(--sidebar); z-index: 10; }
+        .side-header { padding: 15px 20px; background: var(--card); display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid var(--border); }
+        .actions { display: flex; gap: 15px; font-size: 18px; cursor: pointer; align-items: center; }
+        
+        .contact-list { flex: 1; overflow-y: auto; padding: 10px 0; }
+        .contact-item { padding: 12px 20px; display: flex; align-items: center; cursor: pointer; position: relative; gap: 12px; transition: 0.2s; }
+        .contact-item:hover { background: rgba(255,255,255,0.03); }
+        .contact-item.active { background: rgba(0,123,255,0.15); border-left: 3px solid var(--primary); }
+        .avatar-small { width: 48px; height: 48px; border-radius: 12px; object-fit: cover; background: #2a2f32; }
+
+        /* CHAT WINDOW */
+        .chat-window { flex: 1; display: flex; flex-direction: column; background: var(--chat-bg); position: relative; }
+        .chat-header { padding: 12px 25px; background: var(--card); display: flex; align-items: center; gap: 15px; border-bottom: 1px solid var(--border); cursor: pointer; }
+        
+        .message-box { flex: 1; padding: 25px; overflow-y: auto; display: flex; flex-direction: column; gap: 8px; background: radial-gradient(circle at center, rgba(0,123,255,0.03) 0%, transparent 100%); }
+        .bubble { max-width: 70%; padding: 10px 14px; border-radius: 14px; font-size: 14px; position: relative; cursor: pointer; line-height: 1.5; }
+        .sent { background: var(--bubble-sent); align-self: flex-end; border-bottom-right-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); }
+        .received { background: var(--bubble-rcv); align-self: flex-start; border-bottom-left-radius: 2px; border: 1px solid var(--border); }
+        
+        .deleted-msg { font-style: italic; opacity: 0.4; font-size: 12px; display: flex; align-items: center; gap: 5px; }
+        .time { font-size: 10px; opacity: 0.5; display: block; text-align: right; margin-top: 5px; }
+
+        .input-area { padding: 15px 25px; background: var(--card); display: flex; gap: 15px; align-items: center; border-top: 1px solid var(--border); }
+        .input-area input { margin: 0; background: var(--bg); border: none; padding: 12px 20px; }
+        
+        .overlay-panel { position: absolute; inset: 0; background: var(--sidebar); z-index: 100; transform: translateX(-100%); transition: 0.4s cubic-bezier(0.19, 1, 0.22, 1); padding: 0; }
+        .overlay-panel.active { transform: translateX(0); }
+        .panel-content { padding: 30px; text-align: center; }
+        
+        .add-contact-pop { padding: 15px; background: var(--primary); color: white; border-radius: 50%; width: 50px; height: 50px; display: flex; align-items: center; justify-content: center; position: absolute; bottom: 20px; right: 20px; cursor: pointer; box-shadow: 0 10px 20px rgba(0,123,255,0.4); z-index: 5; }
+
+        .hidden { display: none !important; }
+        .avatar-large { width: 140px; height: 140px; border-radius: 24px; object-fit: cover; margin-bottom: 20px; border: 4px solid var(--primary); }
+
+        /* STYLE ICON HAPUS */
+        .del-contact { margin-left: auto; opacity: 0.3; transition: 0.2s; font-size: 16px; padding: 5px; }
+        .del-contact:hover { opacity: 1; color: #ff4d4d; }
+    </style>
+</head>
+<body class="dark-mode">
+
+    <div id="loginBox" class="auth-container">
+        <h1 style="color:var(--primary); margin-bottom: 10px; letter-spacing: 2px;">JSENS</h1>
+        <p style="font-size: 12px; opacity: 0.6; margin-bottom: 20px;">Secure Research Communication</p>
+        <input type="text" id="loginUser" placeholder="Username">
+        <button class="btn-blue" onclick="toDashboard()">MASUK</button>
+        <p onclick="switchAuth('reg')" style="cursor:pointer; margin-top:20px; font-size:13px; color:var(--primary)">Belum punya akun?</p>
+    </div>
+
+    <div id="regBox" class="auth-container hidden">
+        <h2>REGISTER</h2>
+        <input type="text" id="regFullName" placeholder="Nama Lengkap">
+        <input type="text" id="regUser" placeholder="Username">
+        <button class="btn-blue" onclick="handleRegister()">DAFTAR SEKARANG</button>
+        <p onclick="switchAuth('login')" style="cursor:pointer; margin-top:20px; font-size:13px; color:var(--primary)">Kembali Login</p>
+    </div>
+
+    <div id="mainApp">
+        <div class="sidebar">
+            <div class="side-header">
+                <div style="display:flex; align-items:center; gap:12px; overflow: hidden;">
+                    <img id="myAvatarDisplay" class="avatar-small" src="" onclick="openPanel('settingsPanel')">
+                    <b id="sideHeaderName" style="font-size:14px; white-space: nowrap; text-overflow: ellipsis; overflow: hidden;">USER</b>
+                </div>
+                <div class="actions">
+                    <span title="Mode" onclick="toggleTheme()">🌓</span>
+                    <span title="Logout" onclick="doLogout()">🚪</span>
+                </div>
+            </div>
+
+            <div class="contact-list" id="contactList"></div>
+
+            <div class="add-contact-pop" onclick="openPanel('addFriendPanel')">➕</div>
+
+            <div id="addFriendPanel" class="overlay-panel">
+                <div style="padding:20px; display:flex; align-items:center; gap:15px; border-bottom:1px solid var(--border);">
+                    <span style="cursor:pointer" onclick="closePanel('addFriendPanel')">⬅️</span>
+                    <b>Tambah Kontak</b>
+                </div>
+                <div class="panel-content">
+                    <p style="font-size: 13px; opacity: 0.7; margin-bottom: 15px; text-align: left;">Cari teman dengan menggunakan username mereka.</p>
+                    <input type="text" id="newFriendUser" placeholder="Contoh: skysenz">
+                    <button class="btn-blue" onclick="addFriend()">TAMBAHKAN KE KONTAK</button>
+                </div>
+            </div>
+
+            <div id="settingsPanel" class="overlay-panel">
+                <div style="padding:20px; display:flex; align-items:center; gap:15px; border-bottom:1px solid var(--border);">
+                    <span style="cursor:pointer" onclick="closePanel('settingsPanel')">⬅️</span>
+                    <b>Profil Saya</b>
+                </div>
+                <div class="panel-content">
+                    <img id="editAvaPreview" class="avatar-large" src="" onclick="document.getElementById('uploadNewAva').click()">
+                    <input type="file" id="uploadNewAva" class="hidden" accept="image/*" onchange="previewNewAva(this)">
+                    <input type="text" id="editName" placeholder="Nama Tampilan">
+                    <button class="btn-blue" onclick="saveProfile()">UPDATE PROFIL</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="chat-window">
+            <div id="chatHeader" class="chat-header hidden">
+                <img id="headerAvatar" class="avatar-small" src="">
+                <div>
+                    <h4 id="headerName" style="font-size:15px;"></h4>
+                    <small style="color:var(--primary); font-size:11px;">Active Now</small>
+                </div>
+            </div>
+
+            <div class="message-box" id="msgBox">
+                <div style="margin: auto; text-align: center; max-width: 300px;">
+                    <h3 style="color:var(--primary); margin-bottom: 5px;">JSENS WEB CHAT</h3>
+                    <p style="font-size: 12px; opacity: 0.5;">Selemat Datang Di Jsens Web Chat !!</p>
+                </div>
+            </div>
+
+            <div id="inputGroup" class="input-area hidden">
+                <span style="font-size:22px; cursor:pointer; opacity:0.6;" onclick="document.getElementById('sendPicInput').click()">📎</span>
+                <input type="file" id="sendPicInput" class="hidden" accept="image/*" onchange="sendImage(this)">
+                <input type="text" id="chatInput" placeholder="Ketik pesan rahasia..." onkeypress="if(event.key==='Enter') sendMsg()">
+                <button class="btn-blue" style="width:50px; margin:0;" onclick="sendMsg()">➤</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        function loadUsers() {
+            const saved = localStorage.getItem('jsens_users');
+            if (saved) return JSON.parse(saved);
+            return [{ username: "skysenz", name: "Jason Calix", ava: "https://api.dicebear.com/7.x/avataaars/svg?seed=Jason", friends: [], history: {} }];
+        }
+
+        function saveUsersToStorage() {
+            localStorage.setItem('jsens_users', JSON.stringify(registeredUsers));
+        }
+
+        let currentUser = null;
+        let registeredUsers = loadUsers();
+        let friends = []; 
+        let activeFriend = null;
+
+        function toggleTheme() { document.body.classList.toggle('dark-mode'); document.body.classList.toggle('light-mode'); }
+        function switchAuth(t) { 
+            document.getElementById('loginBox').classList.toggle('hidden', t === 'reg'); 
+            document.getElementById('regBox').classList.toggle('hidden', t === 'login'); 
+        }
+        function openPanel(id) { document.getElementById(id).classList.add('active'); }
+        function closePanel(id) { document.getElementById(id).classList.remove('active'); }
+        function doLogout() { if(confirm("Keluar dari JSENS?")) location.reload(); }
+
+        function handleRegister() {
+            const n = document.getElementById('regFullName').value;
+            const u = document.getElementById('regUser').value.toLowerCase().trim();
+            if(n && u) {
+                if(registeredUsers.find(x => x.username === u)) return alert("Username sudah ada!");
+                registeredUsers.push({ username: u, name: n, ava: `https://api.dicebear.com/7.x/avataaars/svg?seed=${u}`, friends: [], history: {} });
+                saveUsersToStorage();
+                alert("Registrasi Berhasil!"); switchAuth('login');
+            }
+        }
+
+        function toDashboard() {
+            const u = document.getElementById('loginUser').value.toLowerCase().trim();
+            registeredUsers = loadUsers(); 
+            currentUser = registeredUsers.find(x => x.username === u);
+            if(currentUser) {
+                if(!currentUser.friends) currentUser.friends = [];
+                if(!currentUser.history) currentUser.history = {};
+                friends = currentUser.friends; 
+                document.getElementById('loginBox').style.display = 'none';
+                document.getElementById('mainApp').style.display = 'flex';
+                document.getElementById('myAvatarDisplay').src = currentUser.ava;
+                document.getElementById('editAvaPreview').src = currentUser.ava;
+                document.getElementById('editName').value = currentUser.name;
+                document.getElementById('sideHeaderName').innerText = currentUser.name.toUpperCase();
+                renderList();
+                setInterval(autoRefresh, 2000);
+            } else { alert("User tidak ditemukan! Silahkan Register."); }
+        }
+
+        function previewNewAva(input) {
+            if (input.files && input.files[0]) {
+                const reader = new FileReader();
+                reader.onload = e => {
+                    document.getElementById('editAvaPreview').src = e.target.result;
+                    document.getElementById('myAvatarDisplay').src = e.target.result;
+                    currentUser.ava = e.target.result;
+                    saveUsersToStorage();
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function addFriend() {
+            const input = document.getElementById('newFriendUser');
+            const target = input.value.trim().toLowerCase();
+            const user = registeredUsers.find(u => u.username === target);
+            if(user) {
+                if(user.username === currentUser.username) return alert("Tidak bisa menambah diri sendiri!");
+                if(!friends.find(f => f.username === target)) {
+                    friends.push({ username: user.username, name: user.name, ava: user.ava });
+                    if(!currentUser.history[target]) currentUser.history[target] = [];
+                    saveUsersToStorage();
+                    input.value = ""; closePanel('addFriendPanel');
+                    renderList();
+                } else { alert("Kontak sudah ada!"); }
+            } else { alert("Username tidak ditemukan!"); }
+        }
+
+        // --- FUNGSI HAPUS KONTAK FIX ---
+        function removeContact(targetUser, event) {
+            event.stopPropagation(); // Biar chat gak kebuka pas klik hapus
+            if(confirm(`Hapus @${targetUser} dari daftar kontak?`)) {
+                // Update daftar teman di objek currentUser
+                currentUser.friends = currentUser.friends.filter(f => f.username !== targetUser);
+                friends = currentUser.friends;
+                
+                // Jika sedang chat sama orang itu, tutup chatnya
+                if(activeFriend && activeFriend.username === targetUser) {
+                    activeFriend = null;
+                    document.getElementById('chatHeader').classList.add('hidden');
+                    document.getElementById('inputGroup').classList.add('hidden');
+                    document.getElementById('msgBox').innerHTML = '<div style="margin: auto; text-align: center; max-width: 300px;"><h3 style="color:var(--primary); margin-bottom: 5px;">JSENS WEB CHAT</h3><p style="font-size: 12px; opacity: 0.5;">Pilih teman untuk mulai chat.</p></div>';
+                }
+
+                // Update ke database (LocalStorage)
+                const myIdx = registeredUsers.findIndex(u => u.username === currentUser.username);
+                registeredUsers[myIdx].friends = currentUser.friends;
+                
+                saveUsersToStorage();
+                renderList();
+            }
+        }
+
+        function renderList() {
+            const list = document.getElementById('contactList');
+            list.innerHTML = "";
+            friends.forEach(f => {
+                const item = document.createElement('div');
+                item.className = `contact-item ${activeFriend?.username === f.username ? 'active' : ''}`;
+                item.onclick = () => { activeFriend = f; renderChat(); renderList(); };
+                item.innerHTML = `
+                    <img src="${f.ava}" class="avatar-small">
+                    <div style="flex:1">
+                        <b style="font-size:14px;">${f.name}</b><br>
+                        <small style="opacity:0.5; font-size:11px;">@${f.username}</small>
+                    </div>
+                    <span class="del-contact" onclick="removeContact('${f.username}', event)">🗑️</span>
+                `;
+                list.appendChild(item);
+            });
+        }
+
+        function renderChat() {
+            if(!activeFriend) return;
+            document.getElementById('chatHeader').classList.remove('hidden');
+            document.getElementById('inputGroup').classList.remove('hidden');
+            document.getElementById('headerName').innerText = activeFriend.name;
+            document.getElementById('headerAvatar').src = activeFriend.ava;
+            const box = document.getElementById('msgBox');
+            let isAtBottom = box.scrollHeight - box.clientHeight <= box.scrollTop + 1;
+            box.innerHTML = "";
+            const chatHistory = currentUser.history[activeFriend.username] || [];
+            chatHistory.forEach((m, i) => {
+                if(m.delMe) return;
+                const b = document.createElement('div');
+                b.className = `bubble ${m.type}`;
+                b.onclick = () => { if(!m.isDel && m.type === 'sent') deleteMsgFlow(i); };
+                if(m.isDel) { b.classList.add('deleted-msg'); b.innerHTML = "<span>🚫 Pesan ditarik</span>"; }
+                else if(m.img) b.innerHTML = `<img src="${m.img}" style="max-width:250px; border-radius:10px;">`;
+                else b.innerHTML = `<span>${m.text}</span>`;
+                const time = document.createElement('span');
+                time.className = 'time';
+                time.innerText = m.time || "";
+                b.appendChild(time);
+                box.appendChild(b);
+            });
+            if(isAtBottom) box.scrollTop = box.scrollHeight;
+        }
+
+        function deleteMsgFlow(index) {
+            const choice = confirm("Hapus Pesan?\nOK: Tarik Semua\nCancel: Hapus Saya");
+            const history = currentUser.history[activeFriend.username];
+            if (choice) {
+                history[index].isDel = true;
+                const receiver = registeredUsers.find(u => u.username === activeFriend.username);
+                if(receiver && receiver.history[currentUser.username]) {
+                    receiver.history[currentUser.username][index].isDel = true;
+                }
+            } else history[index].delMe = true;
+            saveUsersToStorage();
+            renderChat();
+        }
+
+        function sendMsg() {
+            const i = document.getElementById('chatInput');
+            if(i.value && activeFriend) {
+                const msg = { 
+                    text: i.value, 
+                    type: 'sent', 
+                    isDel: false, 
+                    delMe: false, 
+                    time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) 
+                };
+                currentUser.history[activeFriend.username].push(msg);
+                const receiver = registeredUsers.find(u => u.username === activeFriend.username);
+                if(receiver) {
+                    if(!receiver.history[currentUser.username]) receiver.history[currentUser.username] = [];
+                    receiver.history[currentUser.username].push({...msg, type: 'received'});
+                    if(!receiver.friends.find(f => f.username === currentUser.username)) {
+                        receiver.friends.push({ username: currentUser.username, name: currentUser.name, ava: currentUser.ava });
+                    }
+                }
+                saveUsersToStorage();
+                i.value = ""; renderChat();
+            }
+        }
+
+        function sendImage(input) {
+            if (input.files && input.files[0] && activeFriend) {
+                const reader = new FileReader();
+                reader.onload = e => { 
+                    const msg = { img: e.target.result, type: 'sent', isDel: false, delMe: false, time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) };
+                    currentUser.history[activeFriend.username].push(msg);
+                    const receiver = registeredUsers.find(u => u.username === activeFriend.username);
+                    if(receiver) {
+                        if(!receiver.history[currentUser.username]) receiver.history[currentUser.username] = [];
+                        receiver.history[currentUser.username].push({...msg, type: 'received'});
+                    }
+                    saveUsersToStorage();
+                    renderChat(); 
+                };
+                reader.readAsDataURL(input.files[0]);
+            }
+        }
+
+        function saveProfile() {
+            currentUser.name = document.getElementById('editName').value;
+            const idx = registeredUsers.findIndex(x => x.username === currentUser.username);
+            registeredUsers[idx].name = currentUser.name;
+            saveUsersToStorage();
+            document.getElementById('sideHeaderName').innerText = currentUser.name.toUpperCase();
+            alert("Profil Terupdate!"); closePanel('settingsPanel');
+        }
+
+        function autoRefresh() {
+            const latestData = loadUsers();
+            const updatedMe = latestData.find(u => u.username === currentUser.username);
+            if(!updatedMe) return;
+            
+            registeredUsers = latestData;
+            currentUser.history = updatedMe.history;
+            currentUser.friends = updatedMe.friends;
+            friends = updatedMe.friends;
+
+            renderList();
+            if(activeFriend) renderChat();
+        }
+    </script>
+</body>
+</html>
