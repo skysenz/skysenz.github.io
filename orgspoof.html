@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Data Handling</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; line-height: 1.6; }
+        .container { max-width: 600px; margin: auto; border: 1px solid #ccc; padding: 20px; border-radius: 8px; }
+        .output-box { background: #f4f4f4; padding: 10px; border-left: 5px solid #2ecc71; margin-top: 10px; min-height: 1.2em; }
+        input { width: 100%; padding: 8px; margin-bottom: 10px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <h2>Secure Input Display</h2>
+    <p>Masukkan teks di bawah untuk melihat bagaimana data diproses secara aman:</p>
+    
+    <input type="text" id="userInput" placeholder="Ketik sesuatu (contoh: <img src=x onerror=alert(1)>)">
+    
+    <div>Hasil Output:</div>
+    <div id="safeOutput" class="output-box"></div>
+</div>
+
+<script>
+    const inputField = document.getElementById('userInput');
+    const outputDisplay = document.getElementById('safeOutput');
+
+    inputField.addEventListener('input', (e) => {
+        const rawData = e.target.value;
+
+        // CARA AMAN: Menggunakan textContent
+        // Ini akan merender semua karakter sebagai teks biasa, 
+        // bukan sebagai elemen HTML/Script.
+        outputDisplay.textContent = rawData;
+    });
+</script>
+
+</body>
+</html>
